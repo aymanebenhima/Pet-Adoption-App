@@ -1069,30 +1069,147 @@ function toggleViews() {
 toggleViewBtn.addEventListener('click', toggleViews);
 ```
 
-### Step 23: Application Initialization
+### Step 23: Drag and Drop Functionality
+Add drag functionality for mobile and desktop:
+
+```javascript
+// Variables for drag functionality
+let isDragging = false;
+let startX = 0;
+let deltaX = 0;
+let currentCard = null;
+
+// Function to start dragging
+function dragStart(e) {
+    if (!currentCard) return;
+    isDragging = true;
+    startX = e.pageX || e.touches[0].pageX;
+    currentCard = e.target.closest('.pet-card');
+    currentCard.classList.add('dragging');
+    document.addEventListener('mousemove', dragging);
+    document.addEventListener('touchmove', dragging, { passive: false });
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchend', dragEnd);
+}
+
+// Function during dragging
+function dragging(e) {
+    if (!isDragging || !currentCard) return;
+    e.preventDefault();
+    const currentX = e.pageX || e.touches[0].pageX;
+    deltaX = currentX - startX;
+    if (deltaX === 0) return;
+    const rotation = deltaX / 10;
+    currentCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+    
+    // Visual feedback
+    const opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 300);
+    currentCard.style.opacity = opacity;
+}
+
+// Function to end dragging
+function dragEnd() {
+    if (!isDragging || !currentCard) return;
+    isDragging = false;
+    const threshold = 100;
+    
+    if (deltaX > threshold) {
+        handleAction('like');
+    } else if (deltaX < -threshold) {
+        handleAction('skip');
+    } else {
+        // Snap back
+        currentCard.classList.remove('dragging');
+        currentCard.style.transform = 'translateX(0) rotate(0deg)';
+        currentCard.style.opacity = '1';
+    }
+    
+    document.removeEventListener('mousemove', dragging);
+    document.removeEventListener('touchmove', dragging);
+    document.removeEventListener('mouseup', dragEnd);
+    document.removeEventListener('touchend', dragEnd);
+    deltaX = 0;
+    startX = 0;
+}
+```
+
+### Step 24: Table Management Functions
+Add functions to handle table editing and deletion:
+
+```javascript
+// Function to handle editing a pet
+function handleEditClick(petId) {
+    const data = getPetData();
+    const petToEdit = data.find(pet => pet.id === petId);
+    if (!petToEdit) return;
+
+    petIdInput.value = petToEdit.id;
+    petNameInput.value = petToEdit.name;
+    petAgeInput.value = petToEdit.age;
+    petImgInput.value = petToEdit.img;
+    petDescInput.value = petToEdit.desc;
+
+    formSubmitBtn.textContent = 'Update Pet';
+    formCancelBtn.classList.remove('hidden');
+    
+    const formTitle = document.getElementById('form-title');
+    if (formTitle) {
+        formTitle.textContent = 'Edit Pet';
+    }
+    
+    window.scrollTo(0, 0);
+}
+
+// Function to handle deleting a pet
+function handleDeleteClick(petId) {
+    if (confirm('Are you sure you want to delete this pet?')) {
+        deletePet(petId);
+        renderPetTable();
+    }
+}
+
+// Event listener for table buttons
+const petTableBody = document.getElementById('pet-table-body');
+petTableBody.addEventListener('click', (e) => {
+    const petId = parseInt(e.target.dataset.id);
+    if (e.target.classList.contains('edit-btn')) {
+        handleEditClick(petId);
+    }
+    if (e.target.classList.contains('delete-btn')) {
+        handleDeleteClick(petId);
+    }
+});
+
+// Real-time form validation
+[petNameInput, petAgeInput, petImgInput, petDescInput].forEach(input => {
+    input.addEventListener('blur', validateForm);
+    input.addEventListener('input', () => {
+        input.classList.remove('error');
+        const errorId = input.id + '-error';
+        document.getElementById(errorId).classList.remove('show');
+    });
+});
+```
+
+### Step 25: Application Initialization
 Add the main function to start the app:
 
 ```javascript
 // Main function to initialize the application
 function main() {
-    // Initialize database with default data
     initializeDB();
-    
-    // Load pet data for the app
     petData = getPetData();
     
-    // Start the app
     if (petData.length > 0) {
         renderNextCard();
     } else {
         cardContainer.innerHTML = '<p style="text-align:center; padding: 20px;">No pets to swipe. Add some in the admin panel!</p>';
     }
     
-    // Prepare admin table
     renderPetTable();
 }
 
-// Start the application when page loads
+// Start the application
 main();
 ```
 

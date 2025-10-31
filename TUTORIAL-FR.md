@@ -1018,11 +1018,155 @@ main();
 - `!`: Opérateur NON logique ([En savoir plus](https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Operators/Logical_NOT))
 - `classList.contains()`: Vérifie si l'élément a une classe CSS ([En savoir plus](https://developer.mozilla.org/fr/docs/Web/API/Element/classList))
 
+### Étape 23: Fonctionnalité Glisser-Déposer
+Ajouter la fonctionnalité de glissement pour mobile et bureau :
+
+```javascript
+// Variables pour la fonctionnalité de glissement
+let isDragging = false;
+let startX = 0;
+let deltaX = 0;
+let currentCard = null;
+
+// Fonction pour commencer le glissement
+function dragStart(e) {
+    if (!currentCard) return;
+    isDragging = true;
+    startX = e.pageX || e.touches[0].pageX;
+    currentCard = e.target.closest('.pet-card');
+    currentCard.classList.add('dragging');
+    document.addEventListener('mousemove', dragging);
+    document.addEventListener('touchmove', dragging, { passive: false });
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchend', dragEnd);
+}
+
+// Fonction pendant le glissement
+function dragging(e) {
+    if (!isDragging || !currentCard) return;
+    e.preventDefault();
+    const currentX = e.pageX || e.touches[0].pageX;
+    deltaX = currentX - startX;
+    if (deltaX === 0) return;
+    const rotation = deltaX / 10;
+    currentCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+    
+    // Retour visuel
+    const opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 300);
+    currentCard.style.opacity = opacity;
+}
+
+// Fonction pour terminer le glissement
+function dragEnd() {
+    if (!isDragging || !currentCard) return;
+    isDragging = false;
+    const threshold = 100;
+    
+    if (deltaX > threshold) {
+        handleAction('like');
+    } else if (deltaX < -threshold) {
+        handleAction('skip');
+    } else {
+        // Retour à la position
+        currentCard.classList.remove('dragging');
+        currentCard.style.transform = 'translateX(0) rotate(0deg)';
+        currentCard.style.opacity = '1';
+    }
+    
+    document.removeEventListener('mousemove', dragging);
+    document.removeEventListener('touchmove', dragging);
+    document.removeEventListener('mouseup', dragEnd);
+    document.removeEventListener('touchend', dragEnd);
+    deltaX = 0;
+    startX = 0;
+}
+```
+
+### Étape 24: Fonctions de Gestion du Tableau
+Ajouter des fonctions pour gérer l'édition et la suppression du tableau :
+
+```javascript
+// Fonction pour gérer l'édition d'un animal
+function handleEditClick(petId) {
+    const data = getPetData();
+    const petToEdit = data.find(pet => pet.id === petId);
+    if (!petToEdit) return;
+
+    petIdInput.value = petToEdit.id;
+    petNameInput.value = petToEdit.name;
+    petAgeInput.value = petToEdit.age;
+    petImgInput.value = petToEdit.img;
+    petDescInput.value = petToEdit.desc;
+
+    formSubmitBtn.textContent = 'Mettre à jour Animal';
+    formCancelBtn.classList.remove('hidden');
+    
+    const formTitle = document.getElementById('form-title');
+    if (formTitle) {
+        formTitle.textContent = 'Modifier Animal';
+    }
+    
+    window.scrollTo(0, 0);
+}
+
+// Fonction pour gérer la suppression d'un animal
+function handleDeleteClick(petId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet animal ?')) {
+        deletePet(petId);
+        renderPetTable();
+    }
+}
+
+// Écouteur d'événement pour les boutons du tableau
+const petTableBody = document.getElementById('pet-table-body');
+petTableBody.addEventListener('click', (e) => {
+    const petId = parseInt(e.target.dataset.id);
+    if (e.target.classList.contains('edit-btn')) {
+        handleEditClick(petId);
+    }
+    if (e.target.classList.contains('delete-btn')) {
+        handleDeleteClick(petId);
+    }
+});
+
+// Validation de formulaire en temps réel
+[petNameInput, petAgeInput, petImgInput, petDescInput].forEach(input => {
+    input.addEventListener('blur', validateForm);
+    input.addEventListener('input', () => {
+        input.classList.remove('error');
+        const errorId = input.id + '-error';
+        document.getElementById(errorId).classList.remove('show');
+    });
+});
+```
+
+### Étape 25: Initialisation de l'Application
+Ajouter la fonction principale pour démarrer l'app :
+
+```javascript
+// Fonction principale pour initialiser l'application
+function main() {
+    initializeDB();
+    petData = getPetData();
+    
+    if (petData.length > 0) {
+        renderNextCard();
+    } else {
+        cardContainer.innerHTML = '<p style="text-align:center; padding: 20px;">Aucun animal à faire défiler. Ajoutez-en dans le panneau admin !</p>';
+    }
+    
+    renderPetTable();
+}
+
+// Démarrer l'application
+main();
+```
+
 ---
 
 ## 🎉 Félicitations !
 
-Vous avez construit une application complète d'adoption d'animaux ! Voici ce que vous avez appris :
+Vous avez construit une application complète d'adoption d'animaux avec toutes les fonctionnalités ! Voici ce que vous avez appris :
 
 ### Concepts JavaScript Maîtrisés :
 - ✅ Variables et constantes
